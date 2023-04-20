@@ -11,7 +11,7 @@ class Panel {
     public bool Matched { get; set; } = false;
     public bool Destroy { get; set; } = false;
 
-    private int DestroyDelay = 5;
+    public int DestroyTimer = 10;
 
     public Panel(Vector2i screen_pos, int type) {
         ScreenPos = screen_pos;
@@ -31,10 +31,8 @@ class Panel {
 
             Move(MX, MY);
         } else if (Matched) {
-            if (DestroyDelay > 0)
-                DestroyDelay--;
-            else
-                Destroy = true;
+            if (DestroyTimer > 0)
+                DestroyTimer--;
         }
     }
 
@@ -44,5 +42,9 @@ class Panel {
 
     public void Move(int x, int y) {
         ScreenPos = new Vector2i(ScreenPos.X + x, ScreenPos.Y + y);
+    }
+
+    public bool CanDestroy() {
+        return !Moving && DestroyTimer > 0;
     }
 }

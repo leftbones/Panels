@@ -23,6 +23,7 @@ class Game {
     private float TimerProgress = 0.0f;
 
     public Panel[,] Panels;
+    public List<List<Panel>> MatchGroups = new List<List<Panel>>();
 
     private Random RNG = new Random();
 
@@ -76,6 +77,20 @@ class Game {
         }
 
         // Destroy Matches
+        foreach (List<Panel> Group in MatchGroups) {
+            bool Destroy = true;
+            foreach (Panel Match in Group) {
+                if (Match.CanDestroy())
+                    Destroy = false;
+            }
+
+            if (Destroy) {
+                foreach (Panel Match in Group) {
+                    Match.Destroy = true;
+                }
+            }
+        }
+
         for (int y = 0; y < FieldSize.Y; y++) {
             for (int x = 0; x < FieldSize.X; x++) {
                 Panel P = Panels[x, y];
@@ -85,12 +100,15 @@ class Game {
             }
         }
 
+
         // Update Panels
         for (int y = 0; y < FieldSize.Y; y++) {
             for (int x = 0; x < FieldSize.X; x++) {
                 ////
                 // Get Panel
                 Panel P = Panels[x, y];
+
+                if (P.Moving) Console.WriteLine("Panel at " + x + ", " + y + " is moving");
 
                 ////
                 // Drop Panels
@@ -100,6 +118,7 @@ class Game {
                 ////
                 // Match Vertical
                 List<Panel> Matched = new List<Panel>() { P };
+                List<Panel> Group = new List<Panel>();
 
                 if (IsMatch(x, y-1, P.Type)) {
                     Matched.Add(Panels[x, y-1]);
@@ -114,8 +133,10 @@ class Game {
                 }
 
                 if (Matched.Count >= 3) {
-                    foreach (Panel M in Matched)
+                    foreach (Panel M in Matched) {
                         M.Matched = true;
+                        Group.Add(M);
+                    }
                 }
 
                 ////
@@ -135,9 +156,14 @@ class Game {
                 }
 
                 if (Matched.Count >= 3) {
-                    foreach (Panel M in Matched)
+                    foreach (Panel M in Matched) {
                         M.Matched = true;
+                        Group.Add(M);
+                    }
                 }
+
+                if (Group.Count > 0)
+                    MatchGroups.Add(Group);
 
                 ////
                 // Update Panel
@@ -176,6 +202,9 @@ class Game {
 
             DrawRectangle(P.ScreenPos.X + 1, P.ScreenPos.Y + 1, PanelSize - 2, PanelSize - 2, Base);
             DrawRectangle(P.ScreenPos.X + 2, P.ScreenPos.Y + 2, PanelSize - 4, PanelSize - 4, Shadow);
+
+            if (P.Matched)
+                DrawText(P.DestroyTimer.ToString(), P.ScreenPos.X + 5, P.ScreenPos.Y + 5, 10, Color.BLACK);
         }
 
         // Draw Cursor
@@ -220,9 +249,12 @@ class Game {
         Panels[x, y+1] = PU;
     }
 
-    public bool IsMatch(int x, int y, int type) {
-        if (!InBounds(x, y))
+    public bool IsMatch(int x, int y, int type, bool match_oob=false) {
+        if (!InBounds(x, y)) {
+            if (match_oob)
+                return true;
             return false;
+        }
 
         Panel P = Panels[x, y];
         if (!P.Moving && P.Type == type)
